@@ -7,7 +7,7 @@ It is requested to define the load tests for an application REST API that manage
 * A unique phase of 40 seconds will be defined and the rate of users per second will be 5.
 * Only 8 simultaneous connections to the API will be allowed.
 * 95% of the requests cannot overcome 100 ms of latency.
-* The error rate must be 0%
+* The error rate must be 0%.
 
 *Note 1:* is not needed that the execution cover the requisites, only is requested to define them properly.
 
