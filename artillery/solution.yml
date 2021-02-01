@@ -1,0 +1,133 @@
+config:
+  target: "https://localhost:8443"
+  tls:
+    rejectUnauthorized: false
+  phases:
+    - duration: 40
+      arrivalRate: 5
+  payload:
+    path: "books.csv"
+    fields:
+      - "title"
+      - "description"
+  http:
+    pooĺ: 8 # All HTTP requests from all virtual users will be sent over the same 8 connections
+  ensure:
+    maxErrorRate: 0
+    p95: 100 # ms
+  variables:
+    password:
+      - "pass"
+scenarios:
+  - name: "Get books as non logged user"
+    weight: 7 # 7/10 cases
+    flow:
+      # retrieve all books
+      - get:
+          url: "/api/books/"
+          capture: 
+            - json: "$[0].id"
+              as: "first_id"
+            - json: "$[0].title"
+              as: "first_title"
+          expect:
+            - statusCode: 200
+            - contentType: json
+      # retrieve the first book
+      - get:
+          url: "/api/books/{{ first_id }}"
+          capture:
+          - json: "$.title"
+            as: title_response
+          expect:
+            - statusCode: 200
+            - contentType: json
+            - equals:
+              - "{{ first_title }}"
+              - "{{ title_response }}"
+  - name: "Post book as logged user"
+    weight: 2 # 2/10 cases
+    flow:
+      # logIn
+      - get:
+          url: "/api/logIn"
+          auth:
+            user: "user"
+            pass: "{{ password }}"
+      # create book
+      - post:
+            url: "/api/books/"
+            json:
+              title: "{{ title }}"
+              description: "{{ description }}" 
+            capture: 
+              - json: "$.id"
+                as: "post_id"
+              - json: "$.title"
+                as: "post_title"
+            expect:
+            - statusCode: 201
+            - contentType: json
+            - equals:
+              - "{{ title }}"
+              - "{{ post_title }}"
+      # retrieve the created book 
+      - get:
+          url: "/api/books/{{ post_id }}"
+          capture:
+          - json: "$.title"
+            as: title_response
+          expect:
+            - statusCode: 200
+            - contentType: json
+            - equals:
+              - "{{ post_title }}"
+              - "{{ title_response }}"
+  - name: "Delete book as admin user"
+    weight: 1 # 1/10 cases
+    flow:
+      # logIn
+      - get:
+          url: "/api/logIn"
+          auth:
+            user: "admin"
+            pass: "{{ password }}"
+      # create book
+      - post:
+            url: "/api/books/"
+            json:
+              title: "{{ title }}"
+              description: "{{ description }}" 
+            capture: 
+              - json: "$.id"
+                as: "post_id"
+              - json: "$.title"
+                as: "post_title"
+            expect:
+            - statusCode: 201
+            - contentType: json
+            - equals:
+              - "{{ title }}"
+              - "{{ post_title }}"
+      # retrieve the created book 
+      - get:
+          url: "/api/books/{{ post_id }}"
+          capture:
+          - json: "$.title"
+            as: title_response
+          expect:
+            - statusCode: 200
+            - contentType: json
+            - equals:
+              - "{{ post_title }}"
+              - "{{ title_response }}"
+      # delete the created book
+      - delete:
+          url: "/api/books/{{ post_id }}"
+          expect:
+            - statusCode: 204
+      # retrieve the deleted book 
+      - get:
+          url: "/api/books/{{ post_id }}"
+          expect:
+            - statusCode: 404
