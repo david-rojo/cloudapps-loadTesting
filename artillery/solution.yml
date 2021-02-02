@@ -1,15 +1,17 @@
 config:
   target: "https://localhost:8443"
+  plugins:
+    expect: {}
   tls:
     rejectUnauthorized: false
   phases:
     - duration: 40
       arrivalRate: 5
   payload:
-    path: "books.csv"
-    fields:
-      - "title"
-      - "description"
+    - path: "books.csv"
+      fields:
+        - "title"
+        - "description"
   http:
     pooĺ: 8 # All HTTP requests from all virtual users will be sent over the same 8 connections
   ensure:
@@ -54,6 +56,8 @@ scenarios:
           auth:
             user: "user"
             pass: "{{ password }}"
+          expect:
+          - statusCode: 200
       # create book
       - post:
             url: "/api/books/"
@@ -92,6 +96,8 @@ scenarios:
           auth:
             user: "admin"
             pass: "{{ password }}"
+          expect:
+          - statusCode: 200
       # create book
       - post:
             url: "/api/books/"
